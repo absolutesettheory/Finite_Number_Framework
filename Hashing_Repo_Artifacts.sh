@@ -29,7 +29,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     exit 0
 fi
 
-output_file=""
+output_file="${HASH_OUTPUT_PATH:-}"
 if [[ "${1:-}" == "--output" ]]; then
     if [[ $# -lt 2 ]]; then
         usage >&2
@@ -80,14 +80,17 @@ collect_files() {
 should_skip() {
     local rel_path="$1"
 
-    for pattern in ${HASH_EXCLUDE_PATTERNS:-}; do
-        [[ -z "$pattern" ]] && continue
-        case "$rel_path" in
-            $pattern)
-                return 0
-                ;;
-        esac
-    done
+    if [[ -n "${HASH_EXCLUDE_PATTERNS:-}" ]]; then
+        IFS=':' read -r -a exclude_patterns <<< "${HASH_EXCLUDE_PATTERNS}"
+        for pattern in "${exclude_patterns[@]}"; do
+            [[ -z "$pattern" ]] && continue
+            case "$rel_path" in
+                $pattern)
+                    return 0
+                    ;;
+            esac
+        done
+    fi
 
     local pattern
     while IFS= read -r pattern; do
